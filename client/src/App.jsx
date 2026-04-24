@@ -8,21 +8,25 @@ function App() {
   
   const [query, setQuery] = useState('')
   const [rec, setRecc] = useState([])
-  const fakeRecs = [
-    { artist: "Radiohead", album: "OK Computer", title: "Karma Police", reason: "You like alternative rock" },
-    { artist: "Guns N' Roses", album: "Appetite for Destruction", title: "Welcome to the Jungle", reason: "It Rocks!" },
-    { artist: "Van Halen", album: "1984", title: "Jump", reason: "High energy classic rock" },
-]
+
   
-  function handleSearch(query){
-    setQuery(query)
+  async function handleSearch(query){
+    const response = await fetch("http://localhost:8000/recommendation", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ query: query })
+    })
+    const data = await response.json()
+    setRecc(data.Recommendations)
   }
 
   return (
     <>
     <Navbar></Navbar>
     <Search onSearch={handleSearch}></Search>
-    {fakeRecs.map((recs, index) => (
+    {rec.map((recs, index) => (
       <RecommendationCard
       key={index}
       artist={recs.artist}
