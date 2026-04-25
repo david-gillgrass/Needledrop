@@ -7,7 +7,7 @@ import RecommendationCard from './RecommendationCard'
 function App() {
   
   const [query, setQuery] = useState('')
-  const [rec, setRecc] = useState([])
+  const [rec, setRec] = useState([])
 
   
   async function handleSearch(query){
@@ -19,7 +19,7 @@ function App() {
       body: JSON.stringify({ query: query })
     })
     const data = await response.json()
-    setRecc(data.Recommendations)
+    setRec(data.Recommendations)
   }
 
   return (
