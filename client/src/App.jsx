@@ -1,14 +1,23 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import Navbar from './Navbar'
 import Search from './Search'
 import RecommendationCard from './RecommendationCard'
+import ImportBar from './Importbar'
 
 function App() {
   
   const [query, setQuery] = useState('')
   const [rec, setRec] = useState([])
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [historyUploaded, setHistory] = useState(false)
 
+  useEffect(() => {
+    if(historyUploaded){
+      handleSearch()
+    }
+  },[historyUploaded]
+  )
   
   async function handleSearch(query){
     const response = await fetch("http://localhost:8000/recommendation", {
@@ -22,9 +31,22 @@ function App() {
     setRec(data.Recommendations)
   }
 
+  async function handleImport(selectedFile){
+    const formData = new FormData()
+    formData.append('file', selectedFile)
+    const response = await fetch("http://localhost:8000/import",{
+      method: 'POST',
+      body: formData
+    })
+    const data = await response.json
+    setHistory(true)
+  }
+
   return (
     <>
     <Navbar></Navbar>
+    <ImportBar onImport={handleImport}></ImportBar>
+    {historyUploaded && <p>Music History Successfully Uploaded!</p>}
     <Search onSearch={handleSearch}></Search>
     {rec.map((recs, index) => (
       <RecommendationCard
