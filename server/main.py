@@ -12,7 +12,7 @@ client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 listening_history = {}
 
 class SearchRequest(BaseModel):
-    query: str
+    query: str = ''
 
 app = FastAPI()
 
@@ -24,14 +24,22 @@ app.add_middleware(
 )
 
 @app.post('/recommendation')
-def recommendation():
+def recommendation(request: SearchRequest):
     global listening_history
-    history_dumped = json.dumps(listening_history)
+    history_dumped = json.dumps(listening_history) if listening_history else ''
+    if listening_history and request.query:
+        prompt = f"Based on this music listening history: {history_dumped}, and user search {request.query} recommend 12 songs that are similar to listening history, try to include a recommendation for the most common genres in the history. Avoid bands/artists that are present in listening history. In the reason include which artist they are similar to. Do Not recommend the same artists on consecutive runs! Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
+    elif listening_history:
+        prompt = f"Based on this music listening history: {history_dumped}, recommend 12 songs that are similar to listening history, try to include a recommendation for the most common genres in the history. Avoid bands/artists that are present in listening history. In the reason include which artist they are similar to. Do Not recommend the same artists on consecutive runs! Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
+    elif request.query:
+        prompt = f"Based on this music related user search: {request.query}, recommend 12 songs that are relevant to the user search try to include a recommendation for the most common genres similar to the search. In the reason include which artist they are similar to. Do Not recommend the same artists on consecutive runs! Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
+    else:
+        return {"Recommendations":[],"error":"Please upload a scrobbler file or enter a query."}
     message = client.messages.create(
         model='claude-sonnet-4-5',
         max_tokens = 1024,
         messages=[
-            {"role": "user", "content": f"Based on this music listening history: {history_dumped}, recommend 12 songs that are similar to listening history, try to include a recommendation for the most common genres in the history. Avoid bands/artists that are present in listening history. In the reason include which artist they are similar to. Do Not recommend the same artists on consecutive runs! Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"}
+            {"role": "user", "content": prompt}
         ]
     )
     recs = json.loads(message.content[0].text)

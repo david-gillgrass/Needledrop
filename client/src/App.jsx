@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import './App.css'
 import Navbar from './Navbar'
 import Search from './Search'
@@ -12,12 +12,6 @@ function App() {
   const [selectedFile, setSelectedFile] = useState(null)
   const [historyUploaded, setHistory] = useState(false)
 
-  useEffect(() => {
-    if(historyUploaded){
-      handleSearch()
-    }
-  },[historyUploaded]
-  )
   
   async function handleSearch(query){
     const response = await fetch("http://localhost:8000/recommendation", {
@@ -40,6 +34,7 @@ function App() {
     })
     const data = await response.json
     setHistory(true)
+    handleSearch()
   }
 
   return (
