@@ -33,6 +33,7 @@ function App() {
   return (
     <>
     <Navbar></Navbar>
+    <div className='max-w-4xl mx-auto px-4 md:px-6 py-8'>
     <Discovery onSubmit ={handleSubmit}></Discovery>
     {historyUploaded && <p>Music History Successfully Uploaded!</p>}
     {rec.map((recs, index) => (
@@ -44,6 +45,7 @@ function App() {
       reason={recs.reason}
     />
   ))}
+  </div>
     </>
   )
 }
