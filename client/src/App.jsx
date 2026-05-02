@@ -9,7 +9,7 @@ function App() {
   const [rec, setRec] = useState([])
   const [historyUploaded, setHistory] = useState(false)
 
-  async function handleSubmit(selectedFile, query) {
+  async function handleSubmit(selectedFile, query, aiAgent) {
     if(selectedFile){
       const formData = new FormData()
       formData.append('file', selectedFile)
@@ -24,7 +24,7 @@ function App() {
       headers: {
         'Content-Type' : 'application/json'
       },
-      body: JSON.stringify({query: query})
+      body: JSON.stringify({query: query, aiAgent: aiAgent})
     })
     const dataQuery = await responseQuery.json()
     setRec(dataQuery.Recommendations)
@@ -32,7 +32,7 @@ function App() {
 
   return (
     <>
-    <div className='min-h-screen bg-gradient-to-r from-zinc-800 to-zinc-600'>
+    <div className='min-h-screen bg-linear-to-r from-zinc-800 to-zinc-600'>
     <Navbar></Navbar>
     <div className='max-w-4xl mx-auto px-4 md:px-6 py-8'>
     <Discovery onSubmit ={handleSubmit}></Discovery>

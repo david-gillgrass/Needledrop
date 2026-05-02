@@ -4,15 +4,18 @@ from pydantic import BaseModel
 import os 
 from anthropic import Anthropic
 from dotenv import load_dotenv
+from groq import Groq
 import json
 
 load_dotenv()
-client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+client_claude = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+client_groq = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 listening_history = {}
 
 class SearchRequest(BaseModel):
     query: str = ''
+    aiAgent: str = ''
 
 app = FastAPI()
 
@@ -25,6 +28,7 @@ app.add_middleware(
 
 @app.post('/recommendation')
 def recommendation(request: SearchRequest):
+    print(request.aiAgent)
     global listening_history
     history_dumped = json.dumps(listening_history) if listening_history else ''
     if listening_history and request.query:
@@ -35,14 +39,26 @@ def recommendation(request: SearchRequest):
         prompt = f"Based on this music related user search: {request.query}, recommend 12 songs that are relevant to the user search try to include a recommendation for the most common genres similar to the search. In the reason include which artist they are similar to. Do Not recommend the same artists on consecutive runs! Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
     else:
         return {"Recommendations":[],"error":"Please upload a scrobbler file or enter a query."}
-    message = client.messages.create(
-        model='claude-sonnet-4-5',
-        max_tokens = 1024,
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
-    recs = json.loads(message.content[0].text)
+    
+    if request.aiAgent == "claude":
+        message = client_claude.messages.create(
+            model='claude-sonnet-4-5',
+            max_tokens = 1024,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        recs = json.loads(message.content[0].text)
+    else:
+        message = client_groq.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            max_tokens = 1024,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        recs = json.loads(message.choices[0].message.content)
+
     return{'Recommendations': recs}
 
 @app.get("/")

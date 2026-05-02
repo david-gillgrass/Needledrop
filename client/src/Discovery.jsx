@@ -4,6 +4,7 @@ function Discovery({onSubmit}){
 
     const [query, setQuery] = useState('')
     const [selectedFile, setSelectedFile] = useState(null)
+    const [aiAgent, setAgent] = useState('claude')
 
     return(
     <div className="bg-zinc-800 border border-amber-400 rounded-xl p-4 mb-2 flex flex-col md:flex-row items-center gap-3">
@@ -24,10 +25,16 @@ function Discovery({onSubmit}){
         className="flex-1 bg-zinc-700 placeholder-zinc-300 px-4 py-2 rounded-lg border border-zinc-400 focus:outline-none focus:border-amber-400 w-full"
         autoComplete="off"
         />
+
+        <label htmlFor="aiAgent">AI Agent:</label>
+        <select id="aiAgent" className="bg-zinc-700" onChange={(g) => setAgent(g.target.value)}>
+            <option value="claude">Claude</option>
+            <option value="groq">Groq</option>
+        </select>
         
         <button type="button"
         className="bg-amber-400 hover:bg-amber-300 rounded-xl px-4 py-2 text-zinc-700 cursor-pointer transition-colors whitespace-nowrap w-full md:w-auto"
-        onClick={()=> onSubmit(selectedFile,query)}
+        onClick={()=> onSubmit(selectedFile,query,aiAgent)}
         >Submit</button>
     </div>
 )
