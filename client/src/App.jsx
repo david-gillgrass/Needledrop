@@ -3,13 +3,16 @@ import './App.css'
 import Navbar from './Navbar'
 import RecommendationCard from './RecommendationCard'
 import Discovery from './Discovery'
+import Spinner from './Spinner'
 
 function App() {
   
   const [rec, setRec] = useState([])
   const [historyUploaded, setHistory] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   async function handleSubmit(selectedFile, query, aiAgent) {
+    setIsLoading(true)
     if(selectedFile){
       const formData = new FormData()
       formData.append('file', selectedFile)
@@ -28,6 +31,7 @@ function App() {
     })
     const dataQuery = await responseQuery.json()
     setRec(dataQuery.Recommendations)
+    setIsLoading(false)
   }
 
   return (
@@ -42,7 +46,8 @@ function App() {
         <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
       </svg>
       </p>}
-    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+    { isLoading ? <Spinner /> : (
+    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'> 
     {rec.map((recs, index) => (
       <RecommendationCard
       key={index}
@@ -53,6 +58,7 @@ function App() {
     />
   ))}
   </div>
+    )}
   </div>
   </div>
     </>
