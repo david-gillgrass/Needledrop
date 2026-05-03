@@ -57,7 +57,11 @@ def recommendation(request: SearchRequest):
                 {"role": "user", "content": prompt}
             ]
         )
-        recs = json.loads(message.choices[0].message.content)
+        content = message.choices[0].message.content
+        start = content.find('[')
+        end = content.rfind(']')+1
+        content = content[start:end]
+        recs = json.loads(content)
 
     return{'Recommendations': recs}
 
