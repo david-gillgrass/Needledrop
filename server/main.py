@@ -49,9 +49,10 @@ def recommendation(request: SearchRequest):
             ]
         )
         recs = json.loads(message.content[0].text)
+    
     else:
         message = client_groq.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="llama-3.3-70b-versatile" if request.aiAgent == "groq+" else "llama-3.1-8b-instant",
             max_tokens = 1024,
             messages=[
                 {"role": "user", "content": prompt}

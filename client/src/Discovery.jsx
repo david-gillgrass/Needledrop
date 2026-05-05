@@ -29,6 +29,7 @@ function Discovery({onSubmit}){
         <label htmlFor="aiAgent">AI Agent:</label>
         <select id="aiAgent" className="bg-zinc-700" onChange={(g) => setAgent(g.target.value)}>
             <option value="claude">Claude</option>
+            <option value="groq+">Groq Versatile</option>
             <option value="groq">Groq</option>
         </select>
         
