@@ -21,7 +21,7 @@ function Discovery({onSubmit}){
         <input type="text" id="search" 
         value={query}
         onChange={(f)=> setQuery(f.target.value)}
-        placeholder="Additional queries: Uptempo happy day etc..."
+        placeholder="Additional queries: Uptempo, etc..."
         className="flex-1 bg-zinc-700 placeholder-zinc-300 px-4 py-2 rounded-lg border border-zinc-400 focus:outline-none focus:border-amber-400 w-full"
         autoComplete="off"
         />

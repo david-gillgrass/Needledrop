@@ -4,12 +4,14 @@ import Navbar from './Navbar'
 import RecommendationCard from './RecommendationCard'
 import Discovery from './Discovery'
 import Spinner from './Spinner'
+import Player from './Player'
 
 function App() {
   
   const [rec, setRec] = useState([])
   const [historyUploaded, setHistory] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [player, setPlayer] = useState(null)
 
   async function handleSubmit(selectedFile, query, aiAgent) {
     setIsLoading(true)
@@ -34,11 +36,16 @@ function App() {
     setIsLoading(false)
   }
 
+  function handlePlay(artist, title){
+    setPlayer({artist, title})
+  }
+
   return (
     <>
     <div className='min-h-screen bg-linear-to-r from-zinc-800 to-zinc-600'>
     <Navbar></Navbar>
     <div className='max-w-4xl mx-auto px-4 md:px-6 py-8'>
+    { player && <Player artist = {player.artist} title = {player.title}></Player>}
     <Discovery onSubmit ={handleSubmit}></Discovery>
     {historyUploaded && <p className='px-4 py-2 flex justify-center items-center mb-2 gap-3 '>
       Music History Successfully Uploaded!
@@ -49,7 +56,7 @@ function App() {
     { isLoading ? <Spinner /> : (
     <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'> 
     {rec.map((recs, index) => (
-      <RecommendationCard
+      <RecommendationCard onPlay ={handlePlay}
       key={index}
       artist={recs.artist}
       album={recs.album}
