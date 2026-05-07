@@ -20,14 +20,17 @@ function Discovery({onSubmit}){
         <label htmlFor="search"></label>
         <input type="text" id="search" 
         value={query}
-        onChange={(f)=> setQuery(f.target.value)}
+        onChange={(e)=> setQuery(e.target.value)}
         placeholder="Additional queries: Uptempo, etc..."
         className="flex-1 bg-zinc-700 placeholder-zinc-300 px-4 py-2 rounded-lg border border-zinc-400 focus:outline-none focus:border-amber-400 w-full"
         autoComplete="off"
+        onKeyDown={(e)=> {if (e.key === 'Enter'){
+            onSubmit(selectedFile, query,aiAgent)
+        }}}
         />
 
         <label htmlFor="aiAgent">AI Agent:</label>
-        <select id="aiAgent" className="bg-zinc-700" onChange={(g) => setAgent(g.target.value)}>
+        <select id="aiAgent" className="bg-zinc-700" onChange={(e) => setAgent(e.target.value)}>
             <option value="claude">Claude</option>
             <option value="groq+">Groq Versatile</option>
             <option value="groq">Groq</option>
