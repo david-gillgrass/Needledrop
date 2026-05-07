@@ -58,6 +58,7 @@ function App() {
     {rec.map((recs, index) => (
       <RecommendationCard onPlay ={handlePlay}
       key={index}
+      artwork={recs.image}
       artist={recs.artist}
       album={recs.album}
       title={recs.title}

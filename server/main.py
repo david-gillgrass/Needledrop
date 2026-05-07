@@ -6,10 +6,12 @@ from anthropic import Anthropic
 from dotenv import load_dotenv
 from groq import Groq
 import json
+import httpx
 
 load_dotenv()
 client_claude = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 client_groq = Groq(api_key=os.getenv("GROQ_API_KEY"))
+lastfm_api = os.getenv("LASTFM_API_KEY")
 
 listening_history = {}
 
@@ -25,6 +27,26 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
+
+def get_artwork(recs):
+    for rec in recs:
+        try:
+            response = httpx.get(
+                f'https://en.wikipedia.org/api/rest_v1/page/summary/{rec['artist'].replace(" ","_")}_(band)',
+                follow_redirects = True,
+                headers ={"User-Agent": "NeedleDrop/1.0 (https://github.com/david-gillgrass/needledrop; david.gillgrass@gmail.com)"}
+            )
+            print(response.status_code)
+            print(response.text)
+            data = response.json()
+            print(data)
+            rec['image'] = data.get('thumbnail', {}).get('source', '')
+        except Exception as ex:
+            print(f"Error for {rec['artist']}: {ex}")
+            rec['image'] = ''
+    return recs
+
+
 
 @app.post('/recommendation')
 def recommendation(request: SearchRequest):
@@ -65,6 +87,8 @@ def recommendation(request: SearchRequest):
     end = content.rfind(']')+1
     content = content[start:end]
     recs = json.loads(content)
+
+    get_artwork(recs)
 
     return{'Recommendations': recs}
 
