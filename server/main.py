@@ -155,7 +155,7 @@ def spotifyCallback(code: str):
     global spotify_token
     token_info = sp_oauth.get_access_token(code)
     spotify_token = token_info['access_token']
-    return RedirectResponse('http://localhost:5173')
+    return RedirectResponse('http://localhost:5173?spotify=connected')
 
 @app.get('/spotify/top-artists')
 def get_top_artists():

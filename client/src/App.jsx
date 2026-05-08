@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 import Navbar from './Navbar'
 import RecommendationCard from './RecommendationCard'
@@ -12,6 +12,7 @@ function App() {
   const [historyUploaded, setHistory] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [player, setPlayer] = useState(null)
+  const [spotifyImported, setSpotify] = useState(false)
 
   async function handleSubmit(selectedFile, query, aiAgent) {
     setIsLoading(true)
@@ -40,6 +41,17 @@ function App() {
     setPlayer({artist, title})
   }
 
+  useEffect(()=> {
+    const params = new URLSearchParams(window.location.search)
+    if(params.get('spotify') === 'connected' && !spotifyImported){
+      setSpotify(true)
+      fetch('http://127.0.0.1:8000/spotify/top-artists')
+      .then(res => res.json())
+      .then(data => {})
+
+  }
+  },[spotifyImported])
+
   return (
     <>
     <div className='min-h-screen bg-linear-to-r from-zinc-800 to-zinc-600'>
@@ -53,6 +65,13 @@ function App() {
         <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
       </svg>
       </p>}
+      {spotifyImported && <p className='px-4 py-2 flex justify-center items-center mb-2 gap-3 '>
+        Spotify Artists Successfully Uploaded!
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="green" className="size-8">
+        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
+      </svg>
+      </p>
+      }
     { isLoading ? <Spinner /> : (
     <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'> 
     {rec.map((recs, index) => (
