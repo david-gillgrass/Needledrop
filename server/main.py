@@ -7,13 +7,28 @@ from dotenv import load_dotenv
 from groq import Groq
 import json
 import httpx
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
+from fastapi.responses import RedirectResponse
 
 load_dotenv()
 client_claude = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 client_groq = Groq(api_key=os.getenv("GROQ_API_KEY"))
 lastfm_api = os.getenv("LASTFM_API_KEY")
+spotify_client_id = os.getenv("SPOTIFY_CLIENT_ID")
+spotify_client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+spotify_redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
+spotify_token = None
+
+sp_oauth = SpotifyOAuth(
+    client_id = spotify_client_id,
+    client_secret = spotify_client_secret,
+    redirect_uri = spotify_redirect_uri,
+    scope="user-top-read, user-read-recently-played"
+)
 
 listening_history = {}
+spotify_artists = []
 
 class SearchRequest(BaseModel):
     query: str = ''
@@ -32,14 +47,11 @@ def get_artwork(recs):
     for rec in recs:
         try:
             response = httpx.get(
-                f'https://en.wikipedia.org/api/rest_v1/page/summary/{rec['artist'].replace(" ","_")}_(band)',
+                f'https://en.wikipedia.org/api/rest_v1/page/summary/{rec['artist'].replace(" ","_")}',
                 follow_redirects = True,
                 headers ={"User-Agent": "NeedleDrop/1.0 (https://github.com/david-gillgrass/needledrop; david.gillgrass@gmail.com)"}
             )
-            print(response.status_code)
-            print(response.text)
             data = response.json()
-            print(data)
             rec['image'] = data.get('thumbnail', {}).get('source', '')
         except Exception as ex:
             print(f"Error for {rec['artist']}: {ex}")
@@ -52,15 +64,26 @@ def get_artwork(recs):
 def recommendation(request: SearchRequest):
     print(request.aiAgent)
     global listening_history
+    global spotify_artists
+    context = ''
+
+    artists_dumped = json.dumps(spotify_artists) if spotify_artists else ''
     history_dumped = json.dumps(listening_history) if listening_history else ''
-    if listening_history and request.query:
-        prompt = f"Based on this music listening history: {history_dumped}, and user search {request.query} recommend 12 songs that are similar to listening history, try to include a recommendation for the most common genres in the history. Avoid bands/artists that are present in listening history. In the reason include which artist they are similar to. Do NOT recommend the same artists on consecutive runs! Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
-    elif listening_history:
-        prompt = f"Based on this music listening history: {history_dumped}, recommend 12 songs that are similar to listening history, try to include a recommendation for the most common genres in the history. Avoid bands/artists that are present in listening history. In the reason include which artist they are similar to. Do NOT recommend the same artists on consecutive runs! Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
+
+    if artists_dumped:
+        context += f'Spotify artists: {artists_dumped} '
+    if history_dumped:
+        context += f'Scrobbler artists: {history_dumped}'
+
+    
+    if (listening_history or artists_dumped) and request.query:
+        prompt = f"Based on this music listening history: {context}, and user search {request.query} recommend 12 songs that are similar to listening history, try to include a recommendation for the most common genres in the history. Avoid bands/artists that are present in listening history. In the reason include which artist they are similar to. Do NOT recommend the same artists on consecutive runs! Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
+    elif listening_history or artists_dumped:
+        prompt = f"Based on this music listening history: {context}, recommend 12 songs that are similar to listening history, try to include a recommendation for the most common genres in the history. Avoid bands/artists that are present in listening history. In the reason include which artist they are similar to. Do NOT recommend the same artists on consecutive runs! Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
     elif request.query:
         prompt = f"Based on this music related user search: {request.query}, recommend 12 songs that are relevant to the user search try to include a recommendation for the most common genres similar to the search. In the reason include which artist they are similar to. Do NOT recommend the same artists on consecutive runs! Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
     else:
-        return {"Recommendations":[],"error":"Please upload a scrobbler file or enter a query."}
+        return {"Recommendations":[],"error":"Please login to Spotify, upload a scrobbler file or enter a query."}
     
     if request.aiAgent == "claude":
         message = client_claude.messages.create(
@@ -70,8 +93,6 @@ def recommendation(request: SearchRequest):
                 {"role": "user", "content": prompt}
             ]
         )
-        #print(repr(message.content[0].text))
-        #recs = json.loads(message.content[0].text)
     
     else:
         message = client_groq.chat.completions.create(
@@ -123,3 +144,39 @@ async def upload_scrobbler(file: UploadFile = File(...)):
     listening_history = listens
     
     return{"tracks": tracks, 'Listens': listens}
+
+@app.get('/spotify/login')
+def Spotifylogin():
+    auth_url = sp_oauth.get_authorize_url()
+    return RedirectResponse(auth_url)
+
+@app.get('/callback')
+def spotifyCallback(code: str):
+    global spotify_token
+    token_info = sp_oauth.get_access_token(code)
+    spotify_token = token_info['access_token']
+    return RedirectResponse('http://localhost:5173')
+
+@app.get('/spotify/top-artists')
+def get_top_artists():
+    global spotify_token
+    global spotify_artists
+    
+    if not spotify_token:
+        return {"Error": "User not logged in to spotify"}
+    
+    sp = spotipy.Spotify(auth=spotify_token)
+    top_artists = sp.current_user_top_artists(limit=20, time_range='medium_term')
+
+    artists = []
+
+    for artist in top_artists['items']:
+        artists.append({
+            'name' : artist['name'],
+            'image' : artist['images'][0]['url'] if artist['images'] else ''
+        })
+    
+    for artist in artists:
+        spotify_artists.append(artist['name'])
+
+    return{'artists' : artists}
