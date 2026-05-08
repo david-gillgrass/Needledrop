@@ -44,18 +44,26 @@ app.add_middleware(
 )
 
 def get_artwork(recs):
+    global spotify_token
     for rec in recs:
-        try:
-            response = httpx.get(
-                f'https://en.wikipedia.org/api/rest_v1/page/summary/{rec['artist'].replace(" ","_")}',
-                follow_redirects = True,
-                headers ={"User-Agent": "NeedleDrop/1.0 (https://github.com/david-gillgrass/needledrop; david.gillgrass@gmail.com)"}
-            )
-            data = response.json()
-            rec['image'] = data.get('thumbnail', {}).get('source', '')
-        except Exception as ex:
-            print(f"Error for {rec['artist']}: {ex}")
-            rec['image'] = ''
+        
+        if spotify_token:
+            sp = spotipy.Spotify(auth=spotify_token)
+            artwork = sp.search(rec['artist'],limit=1, type='artist', market='None')
+            print(artwork)
+            rec['image'] = artwork['artists']['items'][0]['images'][0]['url']            
+        else:
+            try:
+                response = httpx.get(
+                    f'https://en.wikipedia.org/api/rest_v1/page/summary/{rec['artist'].replace(" ","_")}',
+                    follow_redirects = True,
+                    headers ={"User-Agent": "NeedleDrop/1.0 (https://github.com/david-gillgrass/needledrop; david.gillgrass@gmail.com)"}
+                )
+                data = response.json()
+                rec['image'] = data.get('thumbnail', {}).get('source', '')
+            except Exception as ex:
+                print(f"Error for {rec['artist']}: {ex}")
+                rec['image'] = ''
     return recs
 
 
