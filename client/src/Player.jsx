@@ -1,15 +1,19 @@
 
-function Player({artist,title}){
-
-    const embedURL = `https://widget.deezer.com/widget/dark/search/${encodeURIComponent(artist + " " + title)}`
-    console.log(artist)
+function Player({ trackID }){
+    
+    const spotifyTrack = "https://open.spotify.com/embed/track/"+ trackID
+    
     return(
-        <iframe src= {embedURL} 
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            allowFullScreen
-            frameBorder="0"
-            className="w-full h-48"
-        />
+    <div className="pb-2">
+    <iframe
+    src = {spotifyTrack}
+    width="100%" 
+    height="152" 
+    frameBorder="0" 
+    allowfullscreen="" 
+    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+    loading="lazy"/>
+    </div>
     )
 
 

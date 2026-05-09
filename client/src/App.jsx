@@ -37,8 +37,13 @@ function App() {
     setIsLoading(false)
   }
 
-  function handlePlay(artist, title){
-    setPlayer({artist, title})
+  async function handlePlay(artist, title){
+    const response = await fetch(
+      `http://127.0.0.1:8000/spotify/track?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`
+    )
+    const data = await response.json() 
+    setPlayer(data.track_id)
+    window.scrollTo(0,0)
   }
 
   useEffect(()=> {
@@ -57,7 +62,7 @@ function App() {
     <div className='min-h-screen bg-linear-to-r from-zinc-800 to-zinc-600'>
     <Navbar></Navbar>
     <div className='max-w-4xl mx-auto px-4 md:px-6 py-8'>
-    { player && <Player artist = {player.artist} title = {player.title}></Player>}
+    { player && <Player trackID={player}></Player>}
     <Discovery onSubmit ={handleSubmit}></Discovery>
     {historyUploaded && <p className='px-4 py-2 flex justify-center items-center mb-2 gap-3 '>
       Music History Successfully Uploaded!

@@ -48,10 +48,29 @@ def get_artwork(recs):
     for rec in recs:
         
         if spotify_token:
-            sp = spotipy.Spotify(auth=spotify_token)
-            artwork = sp.search(rec['artist'],limit=1, type='artist', market='None')
-            print(artwork)
-            rec['image'] = artwork['artists']['items'][0]['images'][0]['url']            
+            try:
+                sp = spotipy.Spotify(auth=spotify_token)
+                artwork = sp.search(rec['artist'],limit=5, type='artist')
+                print(artwork)
+                items = artwork['artists']['items']
+                for item in items:
+                    if items and item['name'].lower() == rec['artist'].lower():
+                        rec['image'] = item['images'][0]['url']
+                        break
+                    else:
+                        rec['image'] = ''
+            except:
+                    try:
+                        response = httpx.get(
+                        f'https://en.wikipedia.org/api/rest_v1/page/summary/{rec['artist'].replace(" ","_")}',
+                        follow_redirects = True,
+                        headers ={"User-Agent": "NeedleDrop/1.0 (https://github.com/david-gillgrass/needledrop; david.gillgrass@gmail.com)"}
+                    )
+                        data = response.json()
+                        rec['image'] = data.get('thumbnail', {}).get('source', '')
+                    except Exception as ex:
+                        print(f"Error for {rec['artist']}: {ex}")
+                        rec['image'] = ''
         else:
             try:
                 response = httpx.get(
@@ -188,3 +207,16 @@ def get_top_artists():
         spotify_artists.append(artist['name'])
 
     return{'artists' : artists}
+
+@app.get('/spotify/track')
+def find_id(artist:str, title:str):
+    global spotify_token
+
+    if not spotify_token:
+        return{"Error":"Not Connected to Spotify"}
+    else:
+        sp = spotipy.Spotify(auth=spotify_token)
+        result = sp.search(f'{artist} {title}', limit=1, type='track')
+        track_id = result['tracks']['items'][0]['id']
+    
+    return {"track_id": track_id}
