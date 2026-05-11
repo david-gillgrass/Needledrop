@@ -29,6 +29,7 @@ sp_oauth = SpotifyOAuth(
 
 listening_history = {}
 spotify_artists = []
+prev_artists = ''
 
 class SearchRequest(BaseModel):
     query: str = ''
@@ -92,6 +93,7 @@ def recommendation(request: SearchRequest):
     print(request.aiAgent)
     global listening_history
     global spotify_artists
+    global prev_artists
     context = ''
 
     artists_dumped = json.dumps(spotify_artists) if spotify_artists else ''
@@ -104,11 +106,20 @@ def recommendation(request: SearchRequest):
 
     
     if (listening_history or artists_dumped) and request.query:
-        prompt = f"Based on this music listening history: {context}, and user search {request.query} recommend 12 songs that are similar to listening history, try to include a recommendation for the most common genres in the history. Avoid bands/artists that are present in listening history. In the reason include which artist they are similar to. Do NOT recommend the same artists on consecutive runs! Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
-    elif listening_history or artists_dumped:
-        prompt = f"Based on this music listening history: {context}, recommend 12 songs that are similar to listening history, try to include a recommendation for the most common genres in the history. Avoid bands/artists that are present in listening history. In the reason include which artist they are similar to. Do NOT recommend the same artists on consecutive runs! Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
+        if not prev_artists:
+            prompt = f"Based on this music listening history: {context}, and user search {request.query} recommend 12 songs. In the reason include which artist they are similar to. Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
+        else:
+            prompt = f"Based on this music listening history: {context}, and user search {request.query} recommend 12 songs. Do not include artists in {prev_artists}. In the reason include which artist they are similar to. Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
+    elif (listening_history or artists_dumped):
+        if not prev_artists:
+            prompt = f"Based on this music listening history: {context}, and user search {request.query} recommend 12 songs. In the reason include which artist they are similar to. Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
+        else:
+            prompt = f"Based on this music listening history: {context}, and user search {request.query} recommend 12 songs. Do not include artists in {prev_artists}In the reason include which artist they are similar to. Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
     elif request.query:
-        prompt = f"Based on this music related user search: {request.query}, recommend 12 songs that are relevant to the user search try to include a recommendation for the most common genres similar to the search. In the reason include which artist they are similar to. Do NOT recommend the same artists on consecutive runs! Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
+        if not prev_artists:
+            prompt = f"Based on this music listening history: {context}, and user search {request.query} recommend 12 songs. In the reason include which artist they are similar to. Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
+        else:
+            prompt = f"Based on this music listening history: {context}, and user search {request.query} recommend 12 songs. Do not include artists in {prev_artists}.In the reason include which artist they are similar to. Return ONLY a JSON array with no markdown, no backticks, just raw JSON in this exact format: [{{\"artist\": \"name\", \"album\": \"name\", \"title\": \"name\", \"reason\": \"reason\"}}]"
     else:
         return {"Recommendations":[],"error":"Please login to Spotify, upload a scrobbler file or enter a query."}
     
@@ -135,6 +146,7 @@ def recommendation(request: SearchRequest):
     end = content.rfind(']')+1
     content = content[start:end]
     recs = json.loads(content)
+    prev_artists = json.dumps(recs)
 
     get_artwork(recs)
 
