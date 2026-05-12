@@ -10,6 +10,7 @@ import httpx
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from fastapi.responses import RedirectResponse
+import re
 
 load_dotenv()
 client_claude = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
@@ -44,6 +45,12 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
+def clean_artists(name):
+    name_lower = name.lower().strip().removeprefix('the ').replace(',', '')
+    split = re.split(r'\s*(feat|ft|featuring|with)\.?\s+', name_lower, flags=re.IGNORECASE)
+    return split[0]
+
+
 def get_artwork(recs):
     global spotify_token
     for rec in recs:
@@ -52,10 +59,12 @@ def get_artwork(recs):
             try:
                 sp = spotipy.Spotify(auth=spotify_token)
                 artwork = sp.search(rec['artist'],limit=5, type='artist')
-                print(artwork)
                 items = artwork['artists']['items']
                 for item in items:
-                    if items and item['name'].lower() == rec['artist'].lower():
+                    artist_a = clean_artists(item['name'])
+                    artist_b = clean_artists(rec['artist'])
+                    print(f'compating {artist_a} to {artist_b}')
+                    if artist_a == artist_b:
                         rec['image'] = item['images'][0]['url']
                         break
                     else:
